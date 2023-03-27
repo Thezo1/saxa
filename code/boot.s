@@ -5,6 +5,30 @@ global loader       ; Entry point
     FLAGS        equ 0x0
     CHECKSUM     equ -MAGIC_NUMBER
 
+; NOTE(Thezo): Exported instructions
+
+global outb         ; Output instructions
+    ; send bytes to the output port
+    ; stack: [esp + 8] last argument, the data byte(14 or 15)
+    ;        [esp + 4] first argument, the port number
+    ;        [esp ] return address
+    outb:
+        mov al, [esp + 8]
+        mov dx, [esp + 4]
+        out dx, al
+        ret
+
+global inb           ; Input instructions
+    ; returns bytes from the input port
+    ;  stack: [esp + 4] first argument, address of the I/O port
+    ;         [esp ] return address
+    inb:
+        mov dx, [esp + 4]
+        in al, dx
+        ret
+
+; NOTE(Thezo): Exported instructions
+
 section .bss
     align 4
     kernel_stack:
@@ -15,15 +39,12 @@ section .text:
     dd MAGIC_NUMBER
     dd FLAGS
     dd CHECKSUM
-    mov esp, kernel_stack + KERNEL_STACK_SIZE
-
-    extern sum_of_three
-    push dword 3
-    push dword 2
-    push dword 1
-    call sum_of_three
-
 loader:
-    mov eax, 0xCAFEBABE
+    mov esp, kernel_stack + KERNEL_STACK_SIZE
+    extern main
+    call main
+
+    mov eax, 0xCAFEBABE     ; Definetly keeping this
+
 .loop:
     jmp .loop
